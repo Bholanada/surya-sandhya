@@ -1,7 +1,5 @@
-// Ждём полной загрузки страницы
 document.addEventListener('DOMContentLoaded', function() {
-  
-  // Геолокация (рабочая)
+  // Геолокация
   document.getElementById('geolocation-btn').addEventListener('click', function() {
     if (!navigator.geolocation) {
       alert("Геолокация не поддерживается");
@@ -20,48 +18,65 @@ document.addEventListener('DOMContentLoaded', function() {
     );
   });
 
+  // МАНТРЫ ДЛЯ ТРАДИЦИЙ
+  const traditions = {
+    "sri_vaishnavism": { name: "Шри-Вайшнавизм", practice: "108 повторений джапой" },
+    "gaudiya_vaishnavism": { name: "Гаудия-вайшнавизм", practice: "16 кругов на чётках + медитация" },
+    "shaivism": { name: "Шиваизм", practice: "108 повторений Ом Намах Шивая" },
+    "shaktism": { name: "Шактизм", practice: "27 повторений мантры Чамунды" },
+    "smarta": { name: "Смарта-традиция", practice: "Пение мантры Сарасвати" }
+  };
+
   // Расчёт расписания
   document.getElementById('setup-form').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    // ПРОВЕРКА: Доступна ли SunCalc?
+    // Проверка загрузки SunCalc
     if (typeof SunCalc === 'undefined') {
-      alert("Ошибка: Библиотека SunCalc не загружена. Обновите страницу (Ctrl+F5).");
+      alert("Ошибка: Обновите страницу (Ctrl+F5)");
       return;
     }
     
     const input = document.getElementById('city-input').value.trim();
     const coords = input.split(',');
-    
-    if (coords.length < 2) {
-      alert("Введите координаты: 53.1833,45.0000 (Пенза)");
-      return;
-    }
-    
     const lat = parseFloat(coords[0]);
     const lon = parseFloat(coords[1]);
     
-    if (isNaN(lat) || isNaN(lon)) {
-      alert("Неверный формат координат. Пример: 53.1833,45.0000");
+    if (isNaN(lat) || isNaN(lon) || coords.length < 2) {
+      alert("Введите координаты как: 53.1833,45.0000");
       return;
     }
     
-    // РАСЧЁТ
+    const traditionKey = document.getElementById('tradition').value;
+    const durationMode = document.querySelector('input[name="duration"]:checked').value;
+    const tradition = traditions[traditionKey];
+    const practiceDuration = durationMode === 'repetitions' ? 21 : 15; // минуты
+    
+    // Генерация расписания на 30 дней
+    let html = `<h2>Расписание для ${tradition.name}</h2><table border="1" style="width:100%;border-collapse:collapse;margin:20px 0;">`;
+    html += `<tr><th>Дата</th><th>Восход</th><th>Brahma Muhurta</th><th>Практики</th></tr>`;
+    
     const now = new Date();
-    const times = SunCalc.getTimes(now, lat, lon);
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(now);
+      date.setDate(now.getDate() + i);
+      
+      const times = SunCalc.getTimes(date, lat, lon);
+      const sunrise = times.sunrise;
+      const brahmaStart = new Date(sunrise.getTime() - 96*60000);
+      const practiceEnd = new Date(brahmaStart.getTime() + practiceDuration*60000);
+      
+      html += `
+        <tr>
+          <td>${date.toLocaleDateString('ru-RU')}</td>
+          <td>${sunrise.toLocaleTimeString('ru-RU', {hour12:false})}</td>
+          <td style="background:#f9d77e">${brahmaStart.toLocaleTimeString('ru-RU', {hour12:false})}–${sunrise.toLocaleTimeString('ru-RU', {hour12:false})}</td>
+          <td>${practiceEnd.toLocaleTimeString('ru-RU', {hour12:false})} — ${tradition.practice}</td>
+        </tr>
+      `;
+    }
     
-    // ФОРМИРОВАНИЕ Brahma Muhurta
-    const brahmaStart = new Date(times.sunrise.getTime() - 96 * 60000);
-    const brahmaEnd = new Date(times.sunrise.getTime());
-    
-    // ВЫВОД
-    document.querySelector('main').innerHTML = `
-      <h2>✅ Расписание для ${input}</h2>
-      <p><strong>Восход:</strong> ${times.sunrise.toLocaleTimeString('ru-RU')}</p>
-      <p><strong>Brahma Muhurta:</strong> ${brahmaStart.toLocaleTimeString('ru-RU')} – ${brahmaEnd.toLocaleTimeString('ru-RU')}</p>
-      <button onclick="location.reload()" style="margin-top:20px;background:#f9d77e;padding:10px;border:none">
-        Вернуться к форме
-      </button>
-    `;
+    html += `</table><button onclick="location.reload()" style="background:#f9d77e;padding:10px;border:none;margin-top:20px;">Вернуться</button>`;
+    document.querySelector('main').innerHTML = html;
   });
 });
