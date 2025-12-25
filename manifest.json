@@ -2,7 +2,7 @@
   "name": "Сурья-Сандхья",
   "short_name": "Сурья-Сандхья",
   "description": "Солнечный ритм сна и пробуждения по ведическим циклам",
-  "start_url": "/",
+  "start_url": "/surya-sandhya/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#f9d77e",
